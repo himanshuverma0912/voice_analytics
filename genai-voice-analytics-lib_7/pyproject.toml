@@ -1,0 +1,65 @@
+[project]
+name = "genai-voice-analytics-lib"
+version = "0.12.3"
+description = "Reusable speech and voice analytics building blocks (transcription, LLM plumbing, prompts)."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx[http2]>=0.28.1",
+    "json-repair>=0.59.10",
+    "openai>=2.29.0",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.7.0",
+    "pyyaml>=6.0.2",
+    "jinja2>=3.1.4",
+]
+
+[project.optional-dependencies]
+# The SFTP-to-GCS transfer needs an SSH stack and a cloud SDK. They are kept
+# out of the core so a pod that only transcribes or scores does not carry
+# them -- that is 7 direct dependencies instead of 9, on every image.
+transfer = [
+    "paramiko>=3.5.0",
+    "google-cloud-storage>=2.19.0",
+]
+# Writing results to Postgres. Used by the DAG and by scripts/run_local.py,
+# never by the library itself -- voice_analytics opens no connection (ADR 0001).
+store = [
+    "psycopg[binary]>=3.2.3",
+]
+
+[project.scripts]
+# Installed as an executable, so `voice-analytics transcribe ...` works after
+# pip install. Containers should still invoke `python -m voice_analytics`,
+# which does not depend on the venv's bin directory being on PATH.
+voice-analytics = "voice_analytics.cli.main:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# Non-Python files under this tree (notably prompts/data/domains-prompt.yaml)
+# are packaged automatically, so the catalogue ships inside the wheel and is
+# importable from any working directory. It is never read from the caller's CWD.
+packages = ["src/voice_analytics", "src/voice_analytics_store"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_test_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src/voice_analytics", "src/voice_analytics_store"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = true

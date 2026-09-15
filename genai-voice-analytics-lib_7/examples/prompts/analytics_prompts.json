@@ -1,0 +1,177 @@
+{
+  "base_prompt": "You are a strict call-audit engine for customer service conversations. Your sole output is valid JSON. Do not return markdown, commentary, explanations, or any prose outside the JSON structure.\n\n---\n\n## ROLE & OBJECTIVE\n\nEvaluate a single customer service call transcript against the KPI list provided separately. For each KPI, assess observability, attempt, applicability, score, evidence, and reasoning — strictly based on transcript content only.\n\n---\n\n## TRANSCRIPT CONTEXT\n\n- Speakers are labeled as **Agent** and **Customer**.\n- Language may be English, Hindi, Hinglish, Tamil, Punjabi, or mixed Indian languages.\n- Transcript may contain ASR errors, grammar issues, transliteration, or imperfect speaker labels.\n- No timestamps exist unless explicitly present in the transcript.\n- **Never infer or assume facts not explicitly supported by the transcript.**\n\n---\n\n## EVALUATION INSTRUCTIONS\n\nFor **each KPI**, you must:\n1. Determine whether the KPI is **applicable** to this call.\n2. Determine whether the KPI is **observable** from transcript-only evidence.\n3. Determine whether the KPI was **attempted** by the agent.\n4. Assign a **score** from 0-10 using the scoring scale below.\n5. Provide a **concise, factual reason**.\n6. Provide **all relevant transcript evidence** as exact quoted text.\n\n---\n\n## UNIVERSAL SCORING SCALE\n\nApply this scale to all KPIs unless a KPI-specific override is stated:\n\n| Score | Meaning |\n|-------|---------|\n| 0 | Not attempted / not observed / not applicable / clearly failed or non-compliant |\n| 1 | Weak attempt, poor execution, low confidence, or significant issue present |\n| 2 | Partial / acceptable / mixed execution |\n| 3 | Strong / clear / effective / fully compliant execution |\n\n---\n\n## CRITICAL SCORING CONSTRAINTS\n\n- **Unobservable KPIs** (e.g., dead_air_duration, hold_time_ratio, call_duration, call_abandonment_rate): Do NOT guess. Return `score: 0`, `observable: false`, `raw_value: null` — unless the transcript explicitly states the value.\n- **\"Rate\" KPIs on a single call**: Interpret as a per-call outcome indicator, not a dataset-level metric.\n- **Ambiguous or weak evidence**: Lower the score. Do not give benefit of the doubt.\n- **Evidence duplication**: Do not reuse the same quoted line as primary evidence across multiple KPIs unless it is genuinely the strongest available support for each.\n- **Assumptions**: Penalize any inference not grounded in explicit transcript text.\n- **Missing evidence**: Penalize accordingly.\n- Be **conservative and strict** throughout.\n\n---\n\n## EVIDENCE RULES\n\n- Include **all possible relevant evidence items** for each KPI.\n- Evidence must be **exact quoted text** copied from the transcript — no paraphrasing.\n- Do not correct or normalize ASR errors in quoted evidence.\n- Each evidence item must specify:\n  - `turn_index` — sequential turn number in the transcript, starting at 1\n  - `speaker` — `\"Agent\"`, `\"Customer\"`, or `\"Unknown\"`\n  - `quote` — verbatim text from the transcript\n\nEvidence format:\n```json\n{\n  \"turn_index\": 0,\n  \"speaker\": \"Agent|Customer|Unknown\",\n  \"quote\": \"exact text from transcript\"\n}\n```\n\n---\n\n## OUTPUT FORMAT\n\nReturn **only** the following JSON structure. No text before or after.\n\n```json\n{\n  \"kpis\": [\n    {\n      \"section\": \"\",\n      \"kpi_code\": \"\",\n      \"kpi_name\": \"\",\n      \"observable\": true,\n      \"attempted\": true,\n      \"applicable\": true,\n      \"score\": 0,\n      \"raw_value\": null,\n      \"reason\": \"\",\n      \"confidence\": 0.0,\n      \"evidence\": [\n        {\n          \"turn_index\": 0,\n          \"speaker\": \"Agent\",\n          \"quote\": \"\"\n        }\n      ]\n    }\n  ]\n}\n```\n\n---\n\n## EXAMPLE OUTPUT (Single KPI)\n\n```json\n{\n  \"section\": \"customer_experience_call_quality\",\n  \"kpi_code\": \"script_adherence\",\n  \"kpi_name\": \"Script Adherence\",\n  \"observable\": true,\n  \"attempted\": true,\n  \"applicable\": true,\n  \"score\": 2,\n  \"raw_value\": \"partial\",\n  \"reason\": \"Agent identified the bank and recording purpose, but skipped stronger verification steps.\",\n  \"confidence\": 0.84,\n  \"evidence\": [\n    {\n      \"turn_index\": 1,\n      \"speaker\": \"Agent\",\n      \"quote\": \"Good evening sir. Sir HDFC se baat kar rahi hoon...\"\n    }\n  ]\n}\n```\n\n---\n\n## SELF-CHECK BEFORE OUTPUT\n\nBefore returning JSON, verify:\n- All provided KPI objects are present, in the listed order.\n-  No KPI code is missing, renamed, or duplicated.\n-  All evidence contains exact quoted text — no paraphrasing.\n-  All unobservable KPIs have `score: 0`, `observable: false`, `raw_value: null`.\n-  No markdown, prose, or commentary exists outside the JSON block.\n-  JSON is syntactically valid (no trailing commas, unmatched brackets).\n\n---\n\n## FINAL BEHAVIORAL RULES\n\n- Output **only valid JSON**. Nothing else.\n- Never fabricate, infer, or hallucinate transcript content.\n- Penalize missing evidence. Penalize assumptions. Be strict.",
+  "sections": [
+    {
+      "section_id": "compliance_and_risk",
+      "section_name": "Compliance and Risk",
+      "section_description": "Evaluates customer emotional state and agent's emotional responsiveness.",
+      "order": 1,
+      "kpis": [
+        {
+          "kpi_code": "overall_compliance_score",
+          "kpi_name": "Overall compliance score",
+          "description": "Evaluate whether the conversation complies with the organization's regulatory, legal, and internal policy requirements. Consider authentication, mandatory disclosures, privacy practices, false commitments, inappropriate promises, and any compliance violations. Assign a score between 1 and 10, where 10 represents complete compliance and 1 represents severe compliance failures. Explain the score with evidence from the transcript.",
+          "prompt": "Evaluate whether the conversation complies with the organization's regulatory, legal, and internal policy requirements. Consider authentication, mandatory disclosures, privacy practices, false commitments, inappropriate promises, and any compliance violations. Assign a score between 1 and 10, where 10 represents complete compliance and 1 represents severe compliance failures. Explain the score with evidence from the transcript.",
+          "order": 1
+        },
+        {
+          "kpi_code": "authentication_compliance",
+          "kpi_name": "Authentication Compliance",
+          "description": "Evaluate whether the agent followed the required customer authentication process before discussing account-specific information or taking actions. Consider completeness, sequence, and correctness of the verification process. Score between 1 and 10 and provide supporting evidence.",
+          "prompt": "Evaluate whether the agent followed the required customer authentication process before discussing account-specific information or taking actions. Consider completeness, sequence, and correctness of the verification process. Score between 1 and 10 and provide supporting evidence.",
+          "order": 2
+        },
+        {
+          "kpi_code": "mandatory_disclosure_compliance",
+          "kpi_name": "Mandatory Disclosure Compliance",
+          "description": "Evaluate whether all mandatory disclosures relevant to this use case were communicated accurately, completely, and at the appropriate stage of the conversation. Score between 1 and 10 and justify the assessment with transcript evidence.",
+          "prompt": "Evaluate whether all mandatory disclosures relevant to this use case were communicated accurately, completely, and at the appropriate stage of the conversation. Score between 1 and 10 and justify the assessment with transcript evidence.",
+          "order": 3
+        },
+        {
+          "kpi_code": "data_privacy_and_security_compliance",
+          "kpi_name": "Data Privacy & Security Compliance",
+          "description": "Evaluate whether the agent protected customer information throughout the interaction. Consider unauthorized information sharing, handling of sensitive data, privacy adherence, and security practices. Assign a score between 1 and 10 with justification and evidence.",
+          "prompt": "Evaluate whether the agent protected customer information throughout the interaction. Consider unauthorized information sharing, handling of sensitive data, privacy adherence, and security practices. Assign a score between 1 and 10 with justification and evidence.",
+          "order": 4
+        },
+        {
+          "kpi_code": "regulatory_risk",
+          "kpi_name": "Regulatory Risk",
+          "description": "Assess the overall regulatory risk present in the conversation. Consider mis-selling, misleading statements, false commitments, non-compliance, or actions that could create legal or audit concerns. A higher score indicates lower regulatory risk and stronger adherence. Provide evidence supporting the assessment.",
+          "prompt": "Assess the overall regulatory risk present in the conversation. Consider mis-selling, misleading statements, false commitments, non-compliance, or actions that could create legal or audit concerns. A higher score indicates lower regulatory risk and stronger adherence. Provide evidence supporting the assessment.",
+          "order": 5
+        }
+      ]
+    },
+    {
+      "section_id": "agent_communication",
+      "section_name": "Agent Communication",
+      "section_description": "Assesses agent's verbal clarity, professionalism, and conversational structure.",
+      "order": 2,
+      "kpis": [
+        {
+          "kpi_code": "communication_quality",
+          "kpi_name": "Communication Quality",
+          "description": "Evaluate the overall quality of the agent's communication. Consider clarity, logical flow, professionalism, confidence, active listening, interruptions, and ability to guide the conversation. Assign a score between 1 and 10 with supporting evidence.",
+          "prompt": "Evaluate the overall quality of the agent's communication. Consider clarity, logical flow, professionalism, confidence, active listening, interruptions, and ability to guide the conversation. Assign a score between 1 and 10 with supporting evidence.",
+          "order": 1
+        },
+        {
+          "kpi_code": "professionalism",
+          "kpi_name": "Professionalism",
+          "description": "Evaluate whether the agent maintained a professional, respectful, and courteous tone throughout the interaction. Consider language, politeness, patience, and consistency. Assign a score between 1 and 10 and explain the rationale.",
+          "prompt": "Evaluate whether the agent maintained a professional, respectful, and courteous tone throughout the interaction. Consider language, politeness, patience, and consistency. Assign a score between 1 and 10 and explain the rationale.",
+          "order": 2
+        },
+        {
+          "kpi_code": "empathy",
+          "kpi_name": "Empathy",
+          "description": "Evaluate how effectively the agent recognized and responded to the customer's emotions or concerns. Consider acknowledgement of customer feelings, reassurance, willingness to help, and supportive language. Assign a score between 1 and 10 with evidence.",
+          "prompt": "Evaluate how effectively the agent recognized and responded to the customer's emotions or concerns. Consider acknowledgement of customer feelings, reassurance, willingness to help, and supportive language. Assign a score between 1 and 10 with evidence.",
+          "order": 3
+        },
+        {
+          "kpi_code": "active_listening",
+          "kpi_name": "Active Listening",
+          "description": "Evaluate whether the agent actively listened to the customer. Consider interruptions, asking relevant follow-up questions, confirming understanding, avoiding unnecessary repetition, and responding appropriately to customer concerns. Assign a score between 1 and 10 with supporting examples.",
+          "prompt": "Evaluate whether the agent actively listened to the customer. Consider interruptions, asking relevant follow-up questions, confirming understanding, avoiding unnecessary repetition, and responding appropriately to customer concerns. Assign a score between 1 and 10 with supporting examples.",
+          "order": 4
+        },
+        {
+          "kpi_code": "customer_sentiment",
+          "kpi_name": "Customer Sentiment",
+          "description": "Assess the customer's overall emotional state at the end of the interaction. Consider the emotional journey throughout the conversation and whether the interaction improved or worsened customer sentiment. Assign a score between 1 and 10, where 10 represents a highly positive customer experience and 1 represents a highly negative outcome.",
+          "prompt": "Assess the customer's overall emotional state at the end of the interaction. Consider the emotional journey throughout the conversation and whether the interaction improved or worsened customer sentiment. Assign a score between 1 and 10, where 10 represents a highly positive customer experience and 1 represents a highly negative outcome.",
+          "order": 5
+        }
+      ]
+    },
+    {
+      "section_id": "customer_experience",
+      "section_name": "Customer Experience",
+      "section_description": "Measures how fully and clearly customer issues are resolved.",
+      "order": 3,
+      "kpis": [
+        {
+          "kpi_code": "customer_experience_score",
+          "kpi_name": "Customer Experience Score",
+          "description": "Evaluate the customer's overall experience during the interaction. Consider ease of interaction, communication quality, responsiveness, emotional handling, confidence created, and whether the customer's expectations were met. Assign a score between 1 and 10 with evidence.",
+          "prompt": "Evaluate the customer's overall experience during the interaction. Consider ease of interaction, communication quality, responsiveness, emotional handling, confidence created, and whether the customer's expectations were met. Assign a score between 1 and 10 with evidence.",
+          "order": 1
+        },
+        {
+          "kpi_code": "customer_effort",
+          "kpi_name": "Frustration Handling",
+          "description": "Evaluate how much effort the customer had to expend to complete the interaction. Consider repetitions, unnecessary explanations, multiple transfers, excessive hold time, and process complexity. A higher score indicates lower customer effort. Assign a score between 1 and 10 with supporting evidence.",
+          "prompt": "Evaluate how much effort the customer had to expend to complete the interaction. Consider repetitions, unnecessary explanations, multiple transfers, excessive hold time, and process complexity. A higher score indicates lower customer effort. Assign a score between 1 and 10 with supporting evidence.",
+          "order": 2
+        },
+        {
+          "kpi_code": "frustration_handling",
+          "kpi_name": "Human Takeover Rate",
+          "description": "Evaluate how effectively the agent identified, acknowledged, and reduced customer frustration. Consider emotional recovery, de-escalation techniques, reassurance, and resolution approach. Assign a score between 1 and 10 with evidence.",
+          "prompt": "Evaluate how effectively the agent identified, acknowledged, and reduced customer frustration. Consider emotional recovery, de-escalation techniques, reassurance, and resolution approach. Assign a score between 1 and 10 with evidence.",
+          "order": 3
+        },
+        {
+          "kpi_code": "escalation_risk",
+          "kpi_name": "Escalation Risk",
+          "description": "Assess the likelihood that the customer may escalate the issue, complain further, or remain dissatisfied after the interaction. A higher score indicates lower escalation risk. Consider unresolved concerns, customer sentiment, commitments made, and conversation outcome. Provide a score between 1 and 10 with justification.",
+          "prompt": "Assess the likelihood that the customer may escalate the issue, complain further, or remain dissatisfied after the interaction. A higher score indicates lower escalation risk. Consider unresolved concerns, customer sentiment, commitments made, and conversation outcome. Provide a score between 1 and 10 with justification.",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "section_id": "business_outcome",
+      "section_name": "Business Outcome",
+      "section_description": "Evaluates friction, transfers, and effort required from the customer.",
+      "order": 4,
+      "kpis": [
+        {
+          "kpi_code": "business_outcome_score",
+          "kpi_name": "Business Outcome Score",
+          "description": "Evaluate whether the primary objective of this conversation was achieved. Use the business objective configured for this use case (for example: successful sale, promise to pay, issue resolution, onboarding completion, verification, or lead qualification). Assign a score between 1 and 10 with supporting evidence.",
+          "prompt": "Evaluate whether the primary objective of this conversation was achieved. Use the business objective configured for this use case (for example: successful sale, promise to pay, issue resolution, onboarding completion, verification, or lead qualification). Assign a score between 1 and 10 with supporting evidence.",
+          "order": 1
+        },
+        {
+          "kpi_code": "opportunity_handling",
+          "kpi_name": "Opportunity Handling",
+          "description": "Evaluate how effectively the agent identified and acted upon relevant business opportunities during the conversation. Consider customer needs, appropriate product or service recommendations, timing, and relevance. Assign a score between 1 and 10 with evidence.",
+          "prompt": "Evaluate how effectively the agent identified and acted upon relevant business opportunities during the conversation. Consider customer needs, appropriate product or service recommendations, timing, and relevance. Assign a score between 1 and 10 with evidence.",
+          "order": 2
+        },
+        {
+          "kpi_code": "follow-up_requests",
+          "kpi_name": "Follow-up Requests",
+          "description": "Evaluate whether the conversation concluded with clear next steps. Consider follow-up commitments, action ownership, timelines, customer understanding, and completeness of closure. Assign a score between 1 and 10 with supporting evidence.",
+          "prompt": "Evaluate whether the conversation concluded with clear next steps. Consider follow-up commitments, action ownership, timelines, customer understanding, and completeness of closure. Assign a score between 1 and 10 with supporting evidence.",
+          "order": 3
+        },
+        {
+          "kpi_code": "sales_conversion",
+          "kpi_name": "Sales Conversion",
+          "description": "Evaluate how effectively the agent progressed the customer toward a successful sale. Consider need discovery, objection handling, product explanation, customer engagement, and closing effectiveness. Assign a score between 1 and 10.",
+          "prompt": "Evaluate how effectively the agent progressed the customer toward a successful sale. Consider need discovery, objection handling, product explanation, customer engagement, and closing effectiveness. Assign a score between 1 and 10.",
+          "order": 4
+        },
+        {
+          "kpi_code": "cross-sell/upsell",
+          "kpi_name": "Cross-sell/Upsell",
+          "description": "Evaluate whether appropriate cross-sell or upsell opportunities were identified and presented naturally based on the customer's needs. Consider relevance, timing, value proposition, and customer response. Assign a score between 1 and 10.",
+          "prompt": "Evaluate whether appropriate cross-sell or upsell opportunities were identified and presented naturally based on the customer's needs. Consider relevance, timing, value proposition, and customer response. Assign a score between 1 and 10.",
+          "order": 5
+        },
+        {
+          "kpi_code": "resolution_quality",
+          "kpi_name": "Resolution Quality",
+          "description": "Evaluate whether the customer's issue was fully understood and appropriately resolved. Consider completeness, correctness, clarity of explanation, customer acknowledgement, and confidence that the issue has been addressed. Assign a score between 1 and 10.",
+          "prompt": "Evaluate whether the customer's issue was fully understood and appropriately resolved. Consider completeness, correctness, clarity of explanation, customer acknowledgement, and confidence that the issue has been addressed. Assign a score between 1 and 10.",
+          "order": 6
+        }
+      ]
+    }
+  ]
+}
