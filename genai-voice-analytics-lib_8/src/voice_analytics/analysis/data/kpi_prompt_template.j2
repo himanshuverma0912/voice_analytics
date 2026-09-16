@@ -1,0 +1,12 @@
+{{ input_data }}
+
+{% for kpi in kpis %}
+
+=====================================================
+KPI : {{ kpi.title }}
+KPI Code : {{ kpi.data.kpi_code }}
+=====================================================
+
+{{ kpi.instructions }}
+
+{% endfor %}
